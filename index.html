@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ad Counter – English UI</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+    #main{position:fixed;inset:0;background:url("img.png") center/cover no-repeat;opacity:0;transition:opacity .6s ease;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 8px 12px}
+
+    /* ====== مربعات أعلى الشاشة ====== */
+    #balanceBoxes{position:fixed;top:12px;left:12px;display:flex;gap:8px;z-index:5}
+    .balanceBox{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1.5px solid rgba(255,215,0,.5);border-radius:10px;padding:10px 14px;color:#fff;font-size:16px;font-weight:bold}
+
+    /* ====== مربع العد التنازلي (تحت رصيد النقاط بـ 1 سنتيمتر تقريباً) ====== */
+    #countdownBox{position:fixed;top:60px;left:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1.5px solid rgba(255,215,0,.5);border-radius:10px;padding:12px 16px;color:#ffd700;font-size:18px;font-weight:bold;z-index:5}
+
+    #autoIndicator{position:fixed;top:52px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1.5px solid rgba(255,215,0,.5);border-radius:10px;padding:6px 10px;color:#ffd700;font-size:14px;font-weight:bold;display:none;z-index:5}
+
+    /* ====== الدائرة الوسطى ====== */
+    #centerCircle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100px;height:100px;border-radius:50%;overflow:visible;background:#666;box-shadow:0 0 8px rgba(0,0,0,.55)}
+    #centerCircle img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+    #centerCircle.ripple::after{content:'';position:absolute;top:50%;left:50%;width:0;height:0;background:radial-gradient(circle, rgba(255,0,0,.9) 0%, rgba(180,0,0,.85) 22%, rgba(0,0,0,.8) 44%, rgba(255,0,0,.7) 66%, rgba(0,0,0,.6) 88%, transparent 100%);border-radius:50%;transform:translate(-50%,-50%);animation:denseRipple 1.3s ease-out infinite}
+    @keyframes denseRipple{0%{width:0;height:0;opacity:1}100%{width:260px;height:260px;opacity:0}}
+
+    /* ====== أزرار الصور (أسفل الدائرة مباشرة) ====== */
+    #buttonsRow{display:flex;gap:12px;margin-bottom:12px;justify-content:center}
+    .img-btn{width:70px;height:70px;border:none;background:transparent;cursor:pointer;transition:transform .2s ease}
+    .img-btn:hover{transform:scale(1.1)}
+
+    /* ====== بادئة العدد المتبقي للإعلانات (نصف سنتيمتر فوق زر المشاهدة) ====== */
+    #adBadge{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#ff0033;color:#fff;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:10px;min-width:18px;text-align:center;line-height:1;box-shadow:0 0 4px rgba(0,0,0,.4);z-index:6;}
+
+    /* ====== باقي العناصر ====== */
+    #splash{position:fixed;inset:0;background:url("img4.png") center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;transition:opacity .6s ease}
+    #splash .circle{width:90px;height:90px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 3px #FFD700}
+    #splash .circle img{width:100%;height:100%;object-fit:cover;display:block}
+    #splash .progress-wrapper{width:90px;height:5px;background:#222;border-radius:3px;overflow:hidden;margin-top:10px}
+    #splash .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#ff8c00,#ffd700,#ff8c00);border-radius:3px;animation:loading 3s linear forwards}
+    @keyframes loading{0%{width:0%}100%{width:100%}}
+
+    #tutorial{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:20}
+    .tutorialBox{background:#111;border:2px solid #FFD700;border-radius:14px;padding:18px 22px;max-width:280px;text-align:center;color:#fff;font-size:12px;line-height:1.5}
+    .tutorialBox h3{margin:0 0 10px;color:#FFD700}
+    .tutorialBox button{margin-top:10px;padding:8px 18px;font-size:12px;font-weight:bold;border:none;border-radius:10px;background:#FFD700;color:#000;cursor:pointer}
+
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:30}
+    .modal-content{background:#1a1a1a;border:1.5px solid rgba(255,215,0,.5);border-radius:12px;padding:14px;width:90%;max-width:300px;color:#fff;font-size:11px;display:flex;flex-direction:column;gap:8px}
+    .modal-content input{padding:7px;font-size:11px;border-radius:6px;border:none;text-align:center}
+    .modal-content button{padding:8px;font-size:11px;border-radius:6px;border:none;background:#FFD700;color:#000;font-weight:bold;cursor:pointer}
+    .close-btn{align-self:flex-end;font-size:14px;cursor:pointer;color:#FFD700}
+  </style>
+</head>
+<body>
+
+  <!-- Loading/Splash -->
+  <div id="splash">
+    <div class="circle"><img src="img2.png" alt="Circle"></div>
+    <div class="progress-wrapper"><div class="progress-bar"></div></div>
+  </div>
+
+  <!-- Main Screen -->
+  <div id="main">
+    <!-- مربعات أعلى الشاشة (مكانها القديم) -->
+    <div id="balanceBoxes">
+      <div class="balanceBox">💰 Points: <span id="clicks">0</span></div>
+      <div class="balanceBox">💵 USDT: <span id="usdt">0</span></div>
+    </div>
+    <div id="countdownBox">⏳ <span id="timer">03:00:00</span></div>
+    <div id="autoIndicator">⚡ Auto-Click ON</div>
+
+    <div id="centerCircle"><img src="img3.png" alt="Center"></div>
+
+    <!-- أزرار الصور الأربعة -->
+    <div id="buttonsRow">
+      <!-- زر المشاهدة مع البادئة -->
+      <div style="position:relative;">
+        <div id="adBadge">30</div>
+        <button class="img-btn" id="adBtn"><img src="bt.png" width="70" height="70" alt="Watch Ads"></button>
+      </div>
+      <button class="img-btn" id="swapBtn"><img src="bt2.png" width="70" height="70" alt="Swap"></button>
+      <button class="img-btn" id="withdrawBtn"><img src="bt3.png" width="70" height="70" alt="Withdraw"></button>
+      <button class="img-btn" id="taskBtn"><img src="bt4.png" width="70" height="70" alt="Tasks"></button>
+    </div>
+  </div>
+
+  <!-- Tutorial (first visit only) -->
+  <div id="tutorial" style="display:none">
+    <div class="tutorialBox">
+      <h3>How to play?</h3>
+      <p>1. Press «Watch Ads» 30 times to activate auto-click.<br>
+         2. Collect points, then hit «Swap» to convert into USDT.<br>
+         3. Use «Withdraw» to cash-out USDT to your wallet.</p>
+      <button id="gotItBtn">Got it ✔</button>
+    </div>
+  </div>
+
+  <!-- Tasks Modal -->
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeTask">&times;</span>
+      <div><strong>Daily Tasks</strong></div>
+      <label id="joinChannelLbl">
+        <input type="checkbox" id="joinChannelCheck" data-pts="10000">
+        انضم للقناة (+10,000)
+      </label>
+      <button id="claimTasks">Claim Rewards</button>
+    </div>
+  </div>
+
+  <!-- Swap Modal -->
+  <div class="modal" id="swapModal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeSwap">&times;</span>
+      <div>Enter points (min 10,000)</div>
+      <input type="number" id="swapInput" min="10000" step="1000" placeholder="10000">
+      <div>You will get: <span id="usdtPreview">0</span> USDT</div>
+      <button id="confirmSwap">Convert Now</button>
+    </div>
+  </div>
+
+  <!-- Withdraw Modal -->
+  <div class="modal" id="withdrawModal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeWithdraw">&times;</span>
+      <div>Your Polygon USDT address</div>
+      <input type="text" id="withdrawAddress" placeholder="0x...">
+      <div>Amount to withdraw (min 0.5 USDT)</div>
+      <input type="number" id="withdrawAmount" min="0.5" step="0.1" placeholder="0.5">
+      <button id="confirmWithdraw">Withdraw Now</button>
+    </div>
+  </div>
+
+  <!-- GigaPub Ads -->
+  <script src="https://ad.gigapub.tech/script?id=3459"></script>
+
+  <script>
+    const splash = document.getElementById('splash');
+    const main = document.getElementById('main');
+    const tutorial = document.getElementById('tutorial');
+    const gotItBtn = document.getElementById('gotItBtn');
+    const adBtn = document.getElementById('adBtn');
+    const swapBtn = document.getElementById('swapBtn');
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    const taskBtn = document.getElementById('taskBtn');
+    const centerCircle = document.getElementById('centerCircle');
+    const clicksSpan = document.getElementById('clicks');
+    const usdtSpan = document.getElementById('usdt');
+    const autoIndicator = document.getElementById('autoIndicator');
+    const timerSpan = document.getElementById('timer');
+    const adBadge = document.getElementById('adBadge');
+
+    let counter = 30;
+    let clicks = 0;
+    let usdt = 0;
+    let autoClickEnabled = false;
+    let autoClickInterval = null;
+    let countdownInterval = null;
+    let timeLeft = 3 * 3600;
+
+    /* Splash -> Main + Tutorial (once) */
+    splash.querySelector('.progress-bar').addEventListener('animationend', () => {
+      splash.style.opacity = 0;
+      setTimeout(() => {
+        splash.style.display = 'none';
+        main.style.opacity = 1;
+        if (!sessionStorage.getItem('tutorialSeen')) tutorial.style.display = 'flex';
+      }, 600);
+    });
+    gotItBtn.addEventListener('click', () => {
+      tutorial.style.display = 'none';
+      sessionStorage.setItem('tutorialSeen', 'true');
+    });
+
+    /* Ads Button */
+    adBtn.addEventListener('click', () => {
+      if (counter <= 0) return;
+      window.showGiga()
+        .then(() => {
+          counter--;
+          adBadge.textContent = counter;
+          if (counter === 0) adBadge.style.display = 'none';
+          if (counter === 0 && !autoClickEnabled) {
+            autoClickEnabled = true;
+            autoIndicator.style.display = 'block';
+            centerCircle.classList.add('ripple');
+            startAutoClick();
+            startCountdown();
+            alert("✅ All ads watched! Auto-Click activated for 3 hours.");
+          }
+        })
+        .catch(() => alert("Ad skipped or failed. No reward."));
+    });
+
+    /* Tasks */
+    taskBtn.addEventListener('click', () => { document.getElementById('taskModal').style.display = 'flex'; });
+    document.getElementById('closeTask').onclick = () => { document.getElementById('taskModal').style.display = 'none'; };
+    document.getElementById('joinChannelCheck').onchange = e => {
+      if (e.target.checked) window.open('https://t.me/+FlfyjU68Txg2NjE8', '_blank');
+    };
+    document.getElementById('claimTasks').onclick = () => {
+      const ch = document.getElementById('joinChannelCheck');
+      if (!ch.checked) return alert('يرجى إكمال المهمة أولاً');
+      if (localStorage.getItem('joinedChannel')) return alert('لقد استلمت مكافأة الانضمام مسبقًا');
+      clicks += 10000;
+      clicksSpan.textContent = clicks;
+      localStorage.setItem('joinedChannel', 'true');
+      ch.disabled = true;
+      document.getElementById('joinChannelLbl').style.textDecoration = 'line-through';
+      alert('مبروك! حصلت على 10,000 نقطة');
+      document.getElementById('taskModal').style.display = 'none';
+    };
+
+    /* Swap */
+    swapBtn.addEventListener('click', () => { document.getElementById('swapModal').style.display = 'flex'; });
+    document.getElementById('closeSwap').onclick = () => { document.getElementById('swapModal').style.display = 'none'; };
+    const swapInput = document.getElementById('swapInput');
+    const usdtPreview = document.getElementById('usdtPreview');
+    swapInput.addEventListener('input', () => {
+      const val = Math.floor(Number(swapInput.value) / 10000) * 10000;
+      usdtPreview.textContent = ((val / 10000) * 0.005).toFixed(3);
+    });
+    document.getElementById('confirmSwap').onclick = () => {
+      const pts = Math.floor(Number(swapInput.value) / 10000) * 10000;
+      if (pts < 10000) return alert("Minimum swap is 10,000 points");
+      if (pts > clicks) return alert("Insufficient balance");
+      const reward = (pts / 10000) * 0.005;
+      clicks -= pts; usdt += reward;
+      clicksSpan.textContent = clicks; usdtSpan.textContent = usdt.toFixed(3);
+      document.getElementById('swapModal').style.display = 'none';
+      alert(`Converted! You received ${reward.toFixed(3)} USDT`);
+    };
+
+    /* Withdraw */
+    withdrawBtn.addEventListener('click', () => { document.getElementById('withdrawModal').style.display = 'flex'; });
+    document.getElementById('closeWithdraw').onclick = () => { document.getElementById('withdrawModal').style.display = 'none'; };
+    document.getElementById('confirmWithdraw').onclick = () => {
+      const addr = document.getElementById('withdrawAddress').value.trim();
+      const amt = parseFloat(document.getElementById('withdrawAmount').value);
+      if (!addr) return alert("Enter a valid Polygon USDT address");
+      if (isNaN(amt) || amt < 0.5) return alert("Minimum withdraw 0.5 USDT");
+      if (amt > usdt) return alert("Insufficient USDT balance");
+
+      const telegramToken = "YOUR_BOT_TOKEN";
+      const chatID = "YOUR_CHAT_ID";
+      const msg = `🚨 New Withdrawal 🚨\n👤 User: @${window.telegramUsername||"Not Provided"}\n💰 Amount: ${amt.toFixed(3)} USDT\n📍 Polygon Address: <code>${addr}</code>\n✅ Approve: <code>/approve ${addr} ${amt.toFixed(3)}</code>\n❌ Reject: <code>/reject ${addr} ${amt.toFixed(3)}</code>`;
+
+      fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatID, text: msg, parse_mode: "HTML" })
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) {
+          usdt -= amt; usdtSpan.textContent = usdt.toFixed(3);
+          document.getElementById('withdrawModal').style.display = 'none';
+          alert("Withdrawal request sent to admin!");
+        } else alert("Failed to send notification.");
+      })
+      .catch(() => alert("Network error."));
+    };
+
+    /* Center manual click */
+    centerCircle.addEventListener('click', () => {
+      if (!autoClickEnabled) return;
+      clicks++; clicksSpan.textContent = clicks;
+    });
+
+    /* Auto-click & 3-hour countdown */
+    function startAutoClick() {
+      autoClickInterval = setInterval(() => { clicks++; clicksSpan.textContent = clicks; }, 1000);
+    }
+    function startCountdown() {
+      countdownInterval = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(countdownInterval); clearInterval(autoClickInterval);
+          autoClickEnabled = false; autoIndicator.style.display = 'none';
+          centerCircle.classList.remove('ripple');
+          alert("⏰ 3-hour mining ended!"); return;
+        }
+        timeLeft--;
+        const h = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
+        const m = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
+        const s = String(timeLeft % 60).padStart(2, '0');
+        timerSpan.textContent = `${h}:${m}:${s}`;
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
