@@ -11,11 +11,10 @@
     /* ====== مربعات أعلى الشاشة ====== */
     #balanceBoxes{position:fixed;top:12px;left:12px;display:flex;gap:8px;z-index:5}
     .balanceBox{background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1.5px solid rgba(255,215,0,.5);border-radius:10px;padding:10px 14px;color:#fff;font-size:16px;font-weight:bold}
-
-    /* ====== مربع العد التنازلي (تحت رصيد النقاط بـ 1 سنتيمتر تقريباً) ====== */
     #countdownBox{position:fixed;top:60px;left:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1.5px solid rgba(255,215,0,.5);border-radius:10px;padding:12px 16px;color:#ffd700;font-size:18px;font-weight:bold;z-index:5}
 
-    #autoIndicator{position:fixed;top:52px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1.5px solid rgba(255,215,0,.5);border-radius:10px;padding:6px 10px;color:#ffd700;font-size:14px;font-weight:bold;display:none;z-index:5}
+    /* ====== مؤشر Auto-Click أعلى اليمين دائمًا ====== */
+    #autoIndicator{position:fixed;top:12px;right:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1.5px solid rgba(255,215,0,.5);border-radius:10px;padding:10px 14px;color:#ffd700;font-size:16px;font-weight:bold;z-index:5}
 
     /* ====== الدائرة الوسطى ====== */
     #centerCircle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100px;height:100px;border-radius:50%;overflow:visible;background:#666;box-shadow:0 0 8px rgba(0,0,0,.55)}
@@ -67,7 +66,9 @@
       <div class="balanceBox">💵 USDT: <span id="usdt">0</span></div>
     </div>
     <div id="countdownBox">⏳ <span id="timer">03:00:00</span></div>
-    <div id="autoIndicator">⚡ Auto-Click ON</div>
+
+    <!-- مؤشر Auto-Click أعلى اليمين دائمًا -->
+    <div id="autoIndicator">⚡ Auto-Click OFF</div>
 
     <div id="centerCircle"><img src="img3.png" alt="Center"></div>
 
@@ -182,7 +183,7 @@
           if (counter === 0) adBadge.style.display = 'none';
           if (counter === 0 && !autoClickEnabled) {
             autoClickEnabled = true;
-            autoIndicator.style.display = 'block';
+            autoIndicator.textContent = '⚡ Auto-Click ON';   // << التبديل هنا
             centerCircle.classList.add('ripple');
             startAutoClick();
             startCountdown();
@@ -275,7 +276,8 @@
       countdownInterval = setInterval(() => {
         if (timeLeft <= 0) {
           clearInterval(countdownInterval); clearInterval(autoClickInterval);
-          autoClickEnabled = false; autoIndicator.style.display = 'none';
+          autoClickEnabled = false;
+          autoIndicator.textContent = '⚡ Auto-Click OFF';   // عادت للحالة الأولى
           centerCircle.classList.remove('ripple');
           alert("⏰ 3-hour mining ended!"); return;
         }
